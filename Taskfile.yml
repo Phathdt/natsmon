@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  backend:
+    desc: start backend
+    cmds:
+      - cd backend && go run main.go
+
+  frontend:
+    desc: start frontend
+    cmds:
+      - cd frontend && yarn dev
