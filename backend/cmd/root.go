@@ -9,8 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/spf13/cobra"
 	"natsmon/common"
+	"natsmon/modules/natstransport/fibernats"
 	sctx "natsmon/service-context"
 	"natsmon/service-context/component/fiberc"
+	"natsmon/service-context/component/natsc"
 )
 
 const (
@@ -22,6 +24,7 @@ func newServiceCtx() sctx.ServiceContext {
 	return sctx.NewServiceContext(
 		sctx.WithName(serviceName),
 		sctx.WithComponent(fiberc.NewFiberComp(common.KeyCompFiber)),
+		sctx.WithComponent(natsc.NewNatsComp(common.KeyNatsComp)),
 	)
 }
 
@@ -50,6 +53,15 @@ var rootCmd = &cobra.Command{
 		router.Get("/ping", func(c *fiber.Ctx) error {
 			return c.SendString("Hello, World 👋!")
 		})
+
+		api := router.Group("/api")
+		{
+			jetstreams := api.Group("/jetstreams")
+			{
+				jetstreams.Get("/", fibernats.ListJetstream(serviceCtx))
+				jetstreams.Get("/:stream", fibernats.GetStream(serviceCtx))
+			}
+		}
 
 		router.Static("/", "./public")
 
