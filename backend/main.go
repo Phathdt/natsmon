@@ -1,9 +1,16 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+)
 
 func main() {
 	app := fiber.New()
+
+	app.Use(logger.New(logger.Config{
+		Format: `{"ip":${ip}, "timestamp":"${time}", "status":${status}, "latency":"${latency}", "method":"${method}", "path":"${path}"}` + "\n",
+	}))
 
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World 👋!")
