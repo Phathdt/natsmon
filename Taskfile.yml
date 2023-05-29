@@ -4,7 +4,7 @@ tasks:
   backend:
     desc: start backend
     cmds:
-      - cd backend && go run main.go
+      - cd backend && air
 
   frontend:
     desc: start frontend
