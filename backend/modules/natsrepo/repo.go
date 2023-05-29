@@ -49,3 +49,21 @@ func (r *repo) GetStream(ctx context.Context, stream string) (*natsmodel.Jetstre
 		StreamInfo:   *info,
 	}, nil
 }
+
+func (r *repo) GetConsumers(ctx context.Context, stream string) ([]natsmodel.Consumer, error) {
+	rs, err := r.mng.Consumers(stream)
+	if err != nil {
+		return nil, err
+	}
+
+	consumers := make([]natsmodel.Consumer, len(rs))
+	for i, r := range rs {
+		info, _ := r.LatestState()
+		consumers[i] = natsmodel.Consumer{
+			ConsumerConfig: r.Configuration(),
+			ConsumerInfo:   info,
+		}
+	}
+
+	return consumers, nil
+}

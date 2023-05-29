@@ -9,20 +9,21 @@ import (
 	"natsmon/service-context/component/natsc"
 )
 
-func GetStream(sc sctx.ServiceContext) fiber.Handler {
+func GetConsumer(sc sctx.ServiceContext) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		stream := c.Params("stream")
 
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
 		manager := natsComponent.GetManager()
-		repo := natsrepo.NewRepo(manager)
-		biz := natsbiz.NewGetStreamBiz(repo)
 
-		rs, err := biz.Response(c.Context(), stream)
+		repo := natsrepo.NewRepo(manager)
+		biz := natsbiz.NewGetConsumerBiz(repo)
+
+		consumers, err := biz.Response(c.Context(), stream)
 		if err != nil {
 			panic(err)
 		}
 
-		return c.JSON(rs)
+		return c.JSON(consumers)
 	}
 }

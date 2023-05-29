@@ -60,6 +60,7 @@ var rootCmd = &cobra.Command{
 			{
 				jetstreams.Get("/", fibernats.ListJetstream(serviceCtx))
 				jetstreams.Get("/:stream", fibernats.GetStream(serviceCtx))
+				jetstreams.Get("/:stream/consumers", fibernats.GetConsumer(serviceCtx))
 			}
 		}
 
