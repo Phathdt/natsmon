@@ -2,30 +2,31 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"natsmon/common"
 	"natsmon/modules/natstransport/fibernats"
 	sctx "natsmon/service-context"
-	"natsmon/service-context/component/fiberc"
-	"natsmon/service-context/component/fiberc/middleware"
+	"natsmon/service-context/component/ginc"
+	"natsmon/service-context/component/ginc/middleware"
 	"natsmon/service-context/component/natsc"
 	"natsmon/service-context/component/natspub"
 )
 
 const (
-	serviceName = "channel_service"
+	serviceName = "natsmon"
 	version     = "1.0.0"
 )
 
 func newServiceCtx() sctx.ServiceContext {
 	return sctx.NewServiceContext(
 		sctx.WithName(serviceName),
-		sctx.WithComponent(fiberc.NewFiberComp(common.KeyCompFiber)),
+		sctx.WithComponent(ginc.NewGin(common.KeyCompGin)),
 		sctx.WithComponent(natsc.NewNatsComp(common.KeyNatsComp)),
 		sctx.WithComponent(natspub.NewNatsPubComponent(common.KeyNatsPubComp)),
 	)
@@ -45,35 +46,32 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fiberComp := serviceCtx.MustGet(common.KeyCompFiber).(fiberc.FiberComponent)
+		ginComp := serviceCtx.MustGet(common.KeyCompGin).(ginc.GinComponent)
 
-		router := fiberComp.GetRouter()
+		router := ginComp.GetRouter()
 
-		router.Use(logger.New(logger.Config{
-			Format: `{"ip":${ip}, "timestamp":"${time}", "status":${status}, "latency":"${latency}", "method":"${method}", "path":"${path}"}` + "\n",
-		}))
+		router.Use(gin.Recovery(), gin.Logger(), middleware.Recovery(serviceCtx))
+		router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
-		router.Use(middleware.Recover(serviceCtx))
-
-		router.Get("/ping", func(c *fiber.Ctx) error {
-			return c.SendString("Hello, World 👋!")
+		router.GET("/ping", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "pong",
+			})
 		})
 
 		api := router.Group("/api")
 		{
 			jetstreams := api.Group("/jetstreams")
 			{
-				jetstreams.Get("/", fibernats.ListJetstream(serviceCtx))
-				jetstreams.Get("/:stream", fibernats.GetStream(serviceCtx))
-				jetstreams.Get("/:stream/consumers", fibernats.GetConsumer(serviceCtx))
-				jetstreams.Get("/:stream/messages", fibernats.GetMessages(serviceCtx))
-				jetstreams.Post("/:stream/messages", fibernats.AddMessage(serviceCtx))
+				jetstreams.GET("", fibernats.ListJetstream(serviceCtx))
+				jetstreams.GET("/:stream", fibernats.GetStream(serviceCtx))
+				jetstreams.GET("/:stream/consumers", fibernats.GetConsumer(serviceCtx))
+				jetstreams.GET("/:stream/messages", fibernats.GetMessages(serviceCtx))
+				jetstreams.POST("/:stream/messages", fibernats.AddMessage(serviceCtx))
 			}
 		}
 
-		router.Static("/", "./public")
-
-		if err := router.Listen(fmt.Sprintf(":%d", fiberComp.GetPort())); err != nil {
+		if err := router.Run(fmt.Sprintf(":%d", ginComp.GetPort())); err != nil {
 			log.Error(err)
 		}
 	},

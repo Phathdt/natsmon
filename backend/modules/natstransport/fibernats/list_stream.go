@@ -3,7 +3,7 @@ package fibernats
 import (
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"natsmon/common"
 	"natsmon/modules/natsbiz"
 	"natsmon/modules/natsrepo"
@@ -12,20 +12,20 @@ import (
 	"natsmon/service-context/core"
 )
 
-func ListJetstream(sc sctx.ServiceContext) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-
+func ListJetstream(sc sctx.ServiceContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
 		manager := natsComponent.GetManager()
 		js := natsComponent.GetJs()
 
 		repo := natsrepo.NewRepo(manager, js)
 		biz := natsbiz.NewListJetstreamBiz(repo)
-		rs, err := biz.Response(c.Context(), nil)
+		rs, err := biz.Response(c, nil)
 		if err != nil {
-			panic(err)
+			core.WriteErrorResponse(c, err)
+			return
 		}
 
-		return c.Status(http.StatusOK).JSON(core.SimpleSuccessResponse(rs))
+		c.JSON(http.StatusOK, core.ResponseData(rs))
 	}
 }

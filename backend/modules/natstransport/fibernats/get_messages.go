@@ -3,7 +3,7 @@ package fibernats
 import (
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"natsmon/common"
 	"natsmon/modules/natsbiz"
 	"natsmon/modules/natsrepo"
@@ -13,17 +13,18 @@ import (
 )
 
 type GetMessageParams struct {
-	Offset int64 `json:"offset" query:"offset" validated:"required"`
+	Offset int64 `json:"offset" form:"offset" binding:"required"`
 }
 
-func GetMessages(sc sctx.ServiceContext) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		stream := c.Params("stream")
+func GetMessages(sc sctx.ServiceContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		stream := c.Param("stream")
 
 		var data GetMessageParams
 
-		if err := c.QueryParser(&data); err != nil {
-			panic(err)
+		if err := c.ShouldBind(&data); err != nil {
+			core.WriteErrorResponse(c, core.ErrBadRequest.WithError(err.Error()))
+			return
 		}
 
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
@@ -32,11 +33,12 @@ func GetMessages(sc sctx.ServiceContext) fiber.Handler {
 
 		repo := natsrepo.NewRepo(manager, js)
 		biz := natsbiz.NewGetMessageBiz(repo)
-		messages, err := biz.Response(c.Context(), stream, data.Offset)
+		messages, err := biz.Response(c, stream, data.Offset)
 		if err != nil {
-			panic(err)
+			core.WriteErrorResponse(c, err)
+			return
 		}
 
-		return c.Status(http.StatusOK).JSON(core.SimpleSuccessResponse(messages))
+		c.JSON(http.StatusOK, core.ResponseData(messages))
 	}
 }

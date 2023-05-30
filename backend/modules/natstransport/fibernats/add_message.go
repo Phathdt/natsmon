@@ -3,7 +3,7 @@ package fibernats
 import (
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"natsmon/common"
 	"natsmon/modules/natsbiz"
 	sctx "natsmon/service-context"
@@ -12,25 +12,27 @@ import (
 )
 
 type AddMessageParams struct {
-	Payload string `json:"payload" form:"payload" validate:"required"`
+	Payload string `json:"payload" form:"payload" binding:"required"`
 }
 
-func AddMessage(sc sctx.ServiceContext) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		stream := ctx.Params("stream")
+func AddMessage(sc sctx.ServiceContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		stream := c.Param("stream")
 		var data AddMessageParams
 
-		if err := ctx.BodyParser(&data); err != nil {
-			panic(err)
+		if err := c.ShouldBind(&data); err != nil {
+			core.WriteErrorResponse(c, core.ErrBadRequest.WithError(err.Error()))
+			return
 		}
 
 		publisher := sc.MustGet(common.KeyNatsPubComp).(natspub.NatsPubComponent)
 
 		biz := natsbiz.NewPublishMessageBiz(publisher)
-		if err := biz.Response(ctx.Context(), stream, data.Payload); err != nil {
-			panic(err)
+		if err := biz.Response(c, stream, data.Payload); err != nil {
+			core.WriteErrorResponse(c, err)
+			return
 		}
 
-		return ctx.Status(http.StatusOK).JSON(core.SimpleSuccessResponse("ok"))
+		c.JSON(http.StatusOK, core.ResponseData("ok"))
 	}
 }
