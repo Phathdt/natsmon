@@ -15,6 +15,8 @@ type Message struct {
 
 func ToMessage(m *nats.Msg) Message {
 	seq := strings.Split(m.Reply, ".")[5]
+
+	//TODO update me with another marshaler
 	marshaler := &jetstream.GobMarshaler{}
 
 	message, _ := marshaler.Unmarshal(m)
