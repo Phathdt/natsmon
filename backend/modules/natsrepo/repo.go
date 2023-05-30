@@ -2,17 +2,20 @@ package natsrepo
 
 import (
 	"context"
+	"time"
 
 	"github.com/nats-io/jsm.go"
+	"github.com/nats-io/nats.go"
 	"natsmon/modules/natsmodel"
 )
 
 type repo struct {
 	mng *jsm.Manager
+	js  nats.JetStreamContext
 }
 
-func NewRepo(mng *jsm.Manager) *repo {
-	return &repo{mng: mng}
+func NewRepo(mng *jsm.Manager, js nats.JetStreamContext) *repo {
+	return &repo{mng: mng, js: js}
 }
 
 func (r *repo) ListJetstream(ctx context.Context, filter *jsm.StreamNamesFilter) ([]natsmodel.Jetstream, error) {
@@ -66,4 +69,37 @@ func (r *repo) GetConsumers(ctx context.Context, stream string) ([]natsmodel.Con
 	}
 
 	return consumers, nil
+}
+
+func (r *repo) GetMessages(ctx context.Context, streamName string, offset int64) ([]natsmodel.Message, error) {
+	consumerName := "natsmon"
+	defer r.js.DeleteConsumer(streamName, consumerName)
+
+	ackWait := 10 * time.Second
+	ackPolicy := nats.AckExplicitPolicy
+	maxWaiting := 1
+
+	_, _ = r.js.AddConsumer(streamName, &nats.ConsumerConfig{
+		Durable:         consumerName,
+		DeliverPolicy:   nats.DeliverByStartSequencePolicy,
+		OptStartSeq:     uint64(offset),
+		AckPolicy:       ackPolicy,
+		AckWait:         ackWait,
+		MaxWaiting:      maxWaiting,
+		MaxRequestBatch: 100,
+	})
+
+	sub, _ := r.js.PullSubscribe("", consumerName, nats.Bind(streamName, consumerName))
+
+	msgs, err := sub.Fetch(100)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]natsmodel.Message, len(msgs))
+	for i, msg := range msgs {
+		res[i] = natsmodel.ToMessage(msg)
+	}
+
+	return res, nil
 }

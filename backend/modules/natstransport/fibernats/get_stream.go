@@ -1,12 +1,15 @@
 package fibernats
 
 import (
+	"net/http"
+
 	"github.com/gofiber/fiber/v2"
 	"natsmon/common"
 	"natsmon/modules/natsbiz"
 	"natsmon/modules/natsrepo"
 	sctx "natsmon/service-context"
 	"natsmon/service-context/component/natsc"
+	"natsmon/service-context/core"
 )
 
 func GetStream(sc sctx.ServiceContext) fiber.Handler {
@@ -15,7 +18,8 @@ func GetStream(sc sctx.ServiceContext) fiber.Handler {
 
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
 		manager := natsComponent.GetManager()
-		repo := natsrepo.NewRepo(manager)
+		js := natsComponent.GetJs()
+		repo := natsrepo.NewRepo(manager, js)
 		biz := natsbiz.NewGetStreamBiz(repo)
 
 		rs, err := biz.Response(c.Context(), stream)
@@ -23,6 +27,6 @@ func GetStream(sc sctx.ServiceContext) fiber.Handler {
 			panic(err)
 		}
 
-		return c.JSON(rs)
+		return c.Status(http.StatusOK).JSON(core.SimpleSuccessResponse(rs))
 	}
 }

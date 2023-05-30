@@ -10,13 +10,15 @@ import (
 
 type NatsComponent interface {
 	GetManager() *jsm.Manager
+	GetJs() nats.JetStreamContext
 }
 
 type natsComp struct {
 	id      string
 	logger  sctx.Logger
-	mng     *jsm.Manager
 	natsURI string
+	mng     *jsm.Manager
+	js      nats.JetStreamContext
 }
 
 func NewNatsComp(id string) *natsComp {
@@ -39,6 +41,13 @@ func (n *natsComp) Activate(sc sctx.ServiceContext) error {
 		return err
 	}
 
+	js, err := nc.JetStream()
+	if err != nil {
+		return err
+	}
+
+	n.js = js
+
 	mng, err := jsm.New(nc)
 	if err != nil {
 		return err
@@ -55,4 +64,8 @@ func (n *natsComp) Stop() error {
 
 func (n *natsComp) GetManager() *jsm.Manager {
 	return n.mng
+}
+
+func (n *natsComp) GetJs() nats.JetStreamContext {
+	return n.js
 }

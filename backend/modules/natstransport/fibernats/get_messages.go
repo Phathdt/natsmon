@@ -5,27 +5,33 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"natsmon/common"
-	"natsmon/modules/natsbiz"
 	"natsmon/modules/natsrepo"
 	sctx "natsmon/service-context"
 	"natsmon/service-context/component/natsc"
 	"natsmon/service-context/core"
 )
 
-func ListJetstream(sc sctx.ServiceContext) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+type filter struct {
+	Offset int64 `query:"offset"`
+}
 
+func GetMessages(sc sctx.ServiceContext) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		stream := c.Params("stream")
+		var data filter
+		if err := c.QueryParser(&data); err != nil {
+			panic(err)
+		}
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
 		manager := natsComponent.GetManager()
 		js := natsComponent.GetJs()
 
 		repo := natsrepo.NewRepo(manager, js)
-		biz := natsbiz.NewListJetstreamBiz(repo)
-		rs, err := biz.Response(c.Context(), nil)
+		messages, err := repo.GetMessages(c.Context(), stream, data.Offset)
 		if err != nil {
 			panic(err)
 		}
 
-		return c.Status(http.StatusOK).JSON(core.SimpleSuccessResponse(rs))
+		return c.Status(http.StatusOK).JSON(core.SimpleSuccessResponse(messages))
 	}
 }

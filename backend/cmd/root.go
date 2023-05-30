@@ -12,6 +12,7 @@ import (
 	"natsmon/modules/natstransport/fibernats"
 	sctx "natsmon/service-context"
 	"natsmon/service-context/component/fiberc"
+	"natsmon/service-context/component/fiberc/middleware"
 	"natsmon/service-context/component/natsc"
 )
 
@@ -50,6 +51,8 @@ var rootCmd = &cobra.Command{
 			Format: `{"ip":${ip}, "timestamp":"${time}", "status":${status}, "latency":"${latency}", "method":"${method}", "path":"${path}"}` + "\n",
 		}))
 
+		router.Use(middleware.Recover(serviceCtx))
+
 		router.Get("/ping", func(c *fiber.Ctx) error {
 			return c.SendString("Hello, World 👋!")
 		})
@@ -61,6 +64,7 @@ var rootCmd = &cobra.Command{
 				jetstreams.Get("/", fibernats.ListJetstream(serviceCtx))
 				jetstreams.Get("/:stream", fibernats.GetStream(serviceCtx))
 				jetstreams.Get("/:stream/consumers", fibernats.GetConsumer(serviceCtx))
+				jetstreams.Get("/:stream/messages", fibernats.GetMessages(serviceCtx))
 			}
 		}
 
