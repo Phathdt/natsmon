@@ -14,6 +14,7 @@ import (
 	"natsmon/service-context/component/fiberc"
 	"natsmon/service-context/component/fiberc/middleware"
 	"natsmon/service-context/component/natsc"
+	"natsmon/service-context/component/natspub"
 )
 
 const (
@@ -26,6 +27,7 @@ func newServiceCtx() sctx.ServiceContext {
 		sctx.WithName(serviceName),
 		sctx.WithComponent(fiberc.NewFiberComp(common.KeyCompFiber)),
 		sctx.WithComponent(natsc.NewNatsComp(common.KeyNatsComp)),
+		sctx.WithComponent(natspub.NewNatsPubComponent(common.KeyNatsPubComp)),
 	)
 }
 
@@ -65,6 +67,7 @@ var rootCmd = &cobra.Command{
 				jetstreams.Get("/:stream", fibernats.GetStream(serviceCtx))
 				jetstreams.Get("/:stream/consumers", fibernats.GetConsumer(serviceCtx))
 				jetstreams.Get("/:stream/messages", fibernats.GetMessages(serviceCtx))
+				jetstreams.Post("/:stream/messages", fibernats.AddMessage(serviceCtx))
 			}
 		}
 

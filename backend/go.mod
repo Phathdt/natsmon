@@ -3,10 +3,12 @@ module natsmon
 go 1.20
 
 require (
+	github.com/ThreeDotsLabs/watermill v1.2.0
 	github.com/ThreeDotsLabs/watermill-jetstream v0.0.6
 	github.com/facebookgo/flagenv v0.0.0-20160425205200-fcd59fca7456
 	github.com/gofiber/fiber/v2 v2.46.0
 	github.com/joho/godotenv v1.5.1
+	github.com/namsral/flag v1.7.4-pre
 	github.com/nats-io/jsm.go v0.0.35
 	github.com/nats-io/nats.go v1.26.0
 	github.com/pkg/errors v0.9.1
@@ -15,7 +17,6 @@ require (
 )
 
 require (
-	github.com/ThreeDotsLabs/watermill v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect

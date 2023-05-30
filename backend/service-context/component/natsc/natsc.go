@@ -1,11 +1,10 @@
 package natsc
 
 import (
-	"flag"
-
 	"github.com/nats-io/jsm.go"
 	"github.com/nats-io/nats.go"
 	sctx "natsmon/service-context"
+	"natsmon/service-context/component/common"
 )
 
 type NatsComponent interface {
@@ -30,7 +29,7 @@ func (n *natsComp) ID() string {
 }
 
 func (n *natsComp) InitFlags() {
-	flag.StringVar(&n.natsURI, "nats-uri", "localhost:4222", "nats uri")
+	n.natsURI = common.NatsURI
 }
 
 func (n *natsComp) Activate(sc sctx.ServiceContext) error {

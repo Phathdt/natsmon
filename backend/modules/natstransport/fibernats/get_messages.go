@@ -12,10 +12,19 @@ import (
 	"natsmon/service-context/core"
 )
 
+type GetMessageParams struct {
+	Offset int64 `json:"offset" query:"offset" validated:"required"`
+}
+
 func GetMessages(sc sctx.ServiceContext) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		stream := c.Params("stream")
-		offset, _ := c.ParamsInt("offset", 1)
+
+		var data GetMessageParams
+
+		if err := c.QueryParser(&data); err != nil {
+			panic(err)
+		}
 
 		natsComponent := sc.MustGet(common.KeyNatsComp).(natsc.NatsComponent)
 		manager := natsComponent.GetManager()
@@ -23,7 +32,7 @@ func GetMessages(sc sctx.ServiceContext) fiber.Handler {
 
 		repo := natsrepo.NewRepo(manager, js)
 		biz := natsbiz.NewGetMessageBiz(repo)
-		messages, err := biz.Response(c.Context(), stream, int64(offset))
+		messages, err := biz.Response(c.Context(), stream, data.Offset)
 		if err != nil {
 			panic(err)
 		}
