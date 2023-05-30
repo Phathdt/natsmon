@@ -11,7 +11,6 @@ WORKDIR /app
 COPY backend/go.* /app/
 RUN go mod download
 COPY backend /app
-COPY --from=fe-builder --chown=nobody:nobody ./app/apps/web/dist /app/public
 RUN go build -ldflags '-w -s' -a -o natsmon main.go
 
 FROM alpine:3.17
@@ -19,7 +18,7 @@ WORKDIR /app
 RUN chown nobody:nobody /app
 USER nobody:nobody
 COPY --from=builder --chown=nobody:nobody ./app/natsmon .
-COPY --from=builder --chown=nobody:nobody ./app/public /app/public
+COPY --from=fe-builder --chown=nobody:nobody ./app/apps/web/dist /app/public
 COPY --from=builder --chown=nobody:nobody ./app/run.sh .
 
 ENTRYPOINT sh run.sh
